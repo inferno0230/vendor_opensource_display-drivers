@@ -28,7 +28,18 @@ def define_pineapple(t, v):
             "CONFIG_MSM_MMRM",
             "CONFIG_QTI_HW_FENCE",
             "CONFIG_QCOM_SPEC_SYNC",
-            "CONFIG_MSM_EXT_DISPLAY",
+#ifdef OPLUS_FEATURE_DISPLAY
+            "OPLUS_FEATURE_DISPLAY",
+            "OPLUS_FEATURE_DISPLAY_ADFR",
+            "OPLUS_FEATURE_DISPLAY_HIGH_PRECISION",
+            "OPLUS_FEATURE_DISPLAY_TEMP_COMPENSATION",
+            "OPLUS_FEATURE_DISPLAY_ONSCREENFINGERPRINT",
+#endif /* OPLUS_FEATURE_DISPLAY */
+#ifdef CONFIG_PXLW_IRIS
+            "CONFIG_PXLW_IRIS",
+            "PXLW_IRIS_DUAL",
+#endif /* CONFIG_PXLW_IRIS */
+            "CONFIG_MSM_EXT_DISPLAY"
         ],
 )
 

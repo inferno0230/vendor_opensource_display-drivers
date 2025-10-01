@@ -41,8 +41,13 @@ static void sde_hw_ds_setup_opmode_v1(struct sde_hw_ds *hw_ds, u32 op_mode)
 
 	if (op_mode & SDE_DS_OP_MODE_DUAL) {
 		op_mode = DEST_SCALER_DUAL_PIPE;
-		SDE_REG_WRITE(hw, DEST_SCALER_MERGE_CTRL + hw_ds->scl->base, op_mode);
+	} else if (op_mode & SDE_DS_OP_MODE_QUAD) {
+		op_mode = DEST_SCALER_QUAD_PIPE;
+	} else {
+		op_mode = 0;
 	}
+
+	SDE_REG_WRITE(hw, DEST_SCALER_MERGE_CTRL + hw_ds->scl->base, op_mode);
 }
 
 static void sde_hw_ds_setup_scaler3(struct sde_hw_ds *hw_ds,

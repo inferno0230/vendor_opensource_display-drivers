@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Copyright (c) 2021-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2021-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * Copyright (c) 2015-2021, The Linux Foundation. All rights reserved.
  */
 
@@ -11,6 +11,9 @@
 #include "sde_hw_catalog.h"
 #include "sde_hw_intf.h"
 #include "sde_dbg.h"
+#if defined(CONFIG_PXLW_IRIS)
+#include "dsi_iris_api.h"
+#endif
 
 #define INTF_TIMING_ENGINE_EN           0x000
 #define INTF_CONFIG                     0x004
@@ -408,6 +411,9 @@ static void sde_hw_intf_setup_timing_engine(struct sde_hw_intf *ctx,
 	if ((ctx->cap->features & BIT(SDE_INTF_TE_ALIGN_VSYNC))
 			&& p->poms_align_vsync)
 		intf_cfg2 |= BIT(16);
+
+	if (ctx->cap->features & BIT(SDE_INTF_PERIPHERAL_FLUSH))
+		intf_cfg2 |= BIT(24);
 
 	if (ctx->cfg.split_link_en)
 		SDE_REG_WRITE(c, INTF_REG_SPLIT_LINK, 0x3);
@@ -1040,6 +1046,11 @@ static void sde_hw_intf_enable_compressed_input(struct sde_hw_intf *intf,
 	c = &intf->hw;
 	intf_cfg2 = SDE_REG_READ(c, INTF_CONFIG2);
 
+#if defined(CONFIG_PXLW_IRIS)
+	if (iris_is_chip_supported())
+	/* fixed for dynamic switching from dsc panel timing into raw timing */
+		intf_cfg2 &= ~BIT(12);
+#endif
 	_check_and_set_comp_bit(intf, dsc_4hs_merge, compression_en,
 			&intf_cfg2);
 
@@ -1170,4 +1181,3 @@ void sde_hw_intf_destroy(struct sde_hw_blk_reg_map *hw)
 	if (hw)
 		kfree(to_sde_hw_intf(hw));
 }
-
