@@ -20,6 +20,7 @@
 #include "sde_crtc.h"
 #include "sde_rm.h"
 #include "sde_vm.h"
+#include "sde_hw_catalog.h"
 #include <drm/drm_probe_helper.h>
 #include <linux/version.h>
 #if defined(CONFIG_PXLW_IRIS) || defined(CONFIG_PXLW_SOFT_IRIS)
@@ -1426,7 +1427,7 @@ void sde_connector_helper_bridge_enable(struct drm_connector *connector)
 	 * So delay backlight update to these panels until the
 	 * first frame commit is received from the HW.
 	 */
-	if (display->panel->bl_config.bl_update ==
+	if (!display->poms_pending && display->panel->bl_config.bl_update ==
 				BL_UPDATE_DELAY_UNTIL_FIRST_FRAME)
 		sde_encoder_wait_for_event(c_conn->encoder,
 				MSM_ENC_TX_COMPLETE);
@@ -3708,7 +3709,7 @@ static int _sde_connector_install_properties(struct drm_device *dev,
 		dsi_display = (struct dsi_display *)(display);
 		if (dsi_display && dsi_display->panel) {
 			msm_property_install_range(&c_conn->property_info, "brightness",
-			0x0, 0, dsi_display->panel->bl_config.brightness_max_level, 0,
+			0x0, 0, 0xFFFF, 0,
 			CONNECTOR_PROP_BRIGHTNESS);
 		}
 	}
@@ -3798,6 +3799,7 @@ struct drm_connector *sde_connector_init(struct drm_device *dev,
 	c_conn->bl_wr_index = 0;
 	spin_lock_init(&c_conn->bl_spinlock);
 #endif
+	c_conn->capabilities = sde_kms->catalog->capabilities;
 
 	snprintf(c_conn->name,
 			SDE_CONNECTOR_NAME_SIZE,

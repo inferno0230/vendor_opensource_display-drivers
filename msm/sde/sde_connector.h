@@ -583,6 +583,7 @@ struct sde_connector_sync_data {
  * @qsync_mode: Cached Qsync mode, 0=disabled, 1=continuous mode
  * @qsync_updated: Qsync settings were updated
  * @ept_fps: ept fps is updated, 0 means ept_fps is disabled
+ * @capabilities: display capabilities of the hardware
  * @colorspace_updated: Colorspace property was updated
  * @last_cmd_tx_sts: status of the last command transfer
  * @hdr_capable: external hdr support present
@@ -659,6 +660,8 @@ struct sde_connector {
 	u32 qsync_mode;
 	bool qsync_updated;
 	u32 ept_fps;
+
+	u32 capabilities;
 
 	bool colorspace_updated;
 
