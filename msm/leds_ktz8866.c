@@ -198,7 +198,7 @@ int bl_ic_ktz8866_set_brightness(int bl_lvl)//for set bringhtness
 		ktz8866_ic_write_byte_dual(0x04, mapping_value & 0x07); /* lsb */
 		ktz8866_ic_write_byte_dual(0x05, (mapping_value >> 3) & 0xFF); /* msb */
 		if (!ktz8866_set_bl_flag) {
-			mdelay(15);
+			mdelay(20);
 			ktz8866_ic_write_byte_dual(0x08, 0x4F);
 			ktz8866_set_bl_flag = true;
 		}
