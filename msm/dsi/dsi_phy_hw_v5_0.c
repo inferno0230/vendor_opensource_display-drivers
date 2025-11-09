@@ -11,6 +11,9 @@
 #include "dsi_defs.h"
 #include "dsi_phy_hw.h"
 #include "dsi_catalog.h"
+#ifdef OPLUS_FEATURE_DISPLAY
+#include "dsi_display.h"
+#endif
 
 #define DSIPHY_CMN_REVISION_ID0                                   0x000
 #define DSIPHY_CMN_REVISION_ID1                                   0x004
@@ -114,6 +117,15 @@
 #define DSI_DYN_REFRESH_PLL_CTRL31             (0x090)
 #define DSI_DYN_REFRESH_PLL_UPPER_ADDR         (0x094)
 #define DSI_DYN_REFRESH_PLL_UPPER_ADDR2        (0x098)
+
+#ifdef OPLUS_FEATURE_DISPLAY
+struct dsi_display *get_main_display(void);
+extern bool oplus_enhance_mipi_strength;
+#endif /* OPLUS_FEATURE_DISPLAY */
+
+#ifdef OPLUS_FEATURE_DISPLAY
+extern bool g_oplus_vreg_ctrl_config;
+#endif /* OPLUS_FEATURE_DISPLAY */
 
 static int dsi_phy_hw_v5_0_is_pll_on(struct dsi_phy_hw *phy)
 {
@@ -348,6 +360,9 @@ static void dsi_phy_hw_dphy_enable(struct dsi_phy_hw *phy, struct dsi_phy_cfg *c
 	bool split_link_enabled;
 	u32 lanes_per_sublink;
 	u32 cmn_lane_ctrl0 = 0;
+#ifdef OPLUS_FEATURE_DISPLAY
+	struct dsi_display *display = get_main_display();
+#endif /* OPLUS_FEATURE_DISPLAY */
 
 	/* Alter PHY configurations if data rate less than 1.5GHZ*/
 	if (cfg->bit_clk_rate_hz <= 1500000000)
@@ -356,9 +371,26 @@ static void dsi_phy_hw_dphy_enable(struct dsi_phy_hw *phy, struct dsi_phy_cfg *c
 	vreg_ctrl_0 = 0x44;
 	glbl_rescode_top_ctrl = less_than_1500_mhz ? 0x3c : 0x03;
 	glbl_rescode_bot_ctrl = less_than_1500_mhz ? 0x38 : 0x3c;
+
+#ifndef OPLUS_FEATURE_DISPLAY
 	glbl_str_swi_cal_sel_ctrl = 0x00;
 	glbl_hstx_str_ctrl_0 = 0x88;
-
+#else
+	if (oplus_enhance_mipi_strength) {
+		glbl_str_swi_cal_sel_ctrl = 0x01;
+		glbl_hstx_str_ctrl_0 = 0xFF;
+		if (g_oplus_vreg_ctrl_config) {
+			vreg_ctrl_0 = 0x47;
+			if (display != NULL && display->panel != NULL) {
+				if(!strcmp(display->panel->name, "Dual dsi csot nt36532 video mode panel with DSC"))
+					vreg_ctrl_0 = 0x46;
+			}
+		}
+	} else {
+		glbl_str_swi_cal_sel_ctrl = 0x00;
+		glbl_hstx_str_ctrl_0 = 0x88;
+	}
+#endif /* OPLUS_FEATURE_DISPLAY */
 
 	split_link_enabled = cfg->split_link.enabled;
 	lanes_per_sublink = cfg->split_link.lanes_per_sublink;
@@ -418,6 +450,12 @@ static void dsi_phy_hw_dphy_enable(struct dsi_phy_hw *phy, struct dsi_phy_cfg *c
 
 	/* Select full-rate mode */
 	DSI_W32(phy, DSIPHY_CMN_CTRL_2, 0x40);
+#ifdef OPLUS_FEATURE_DISPLAY
+	if (display != NULL && display->panel != NULL) {
+		if(!strcmp(display->panel->name, "Dual dsi csot nt36532 video mode panel with DSC"))
+			DSI_W32(phy, DSIPHY_CMN_CTRL_2, 0x64);
+	}
+#endif
 
 	switch (cfg->pll_source) {
 	case DSI_PLL_SOURCE_STANDALONE:

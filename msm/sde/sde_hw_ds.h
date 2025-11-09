@@ -15,8 +15,9 @@ struct sde_hw_ds;
 /* Destination Scaler DUAL mode overfetch pixel count */
 #define SDE_DS_OVERFETCH_SIZE 5
 
-/* Destination scaler DUAL mode operation bit */
+/* Destination scaler mode operation bit */
 #define SDE_DS_OP_MODE_DUAL BIT(16)
+#define SDE_DS_OP_MODE_QUAD BIT(17)
 
 /* struct sde_hw_ds_cfg - destination scaler config
  * @idx          : DS selection index

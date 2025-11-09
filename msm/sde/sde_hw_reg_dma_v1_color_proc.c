@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Copyright (c) 2021-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2021-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
  */
 
@@ -15,6 +15,10 @@
 #include "sde_dbg.h"
 #include "sde_hw_util.h"
 #include "sde_kms.h"
+
+#if defined(CONFIG_PXLW_IRIS) || defined(CONFIG_PXLW_SOFT_IRIS)
+#include "dsi_iris_api.h"
+#endif
 
 /* Reserve space of 128 words for LUT dma payload set-up */
 #define REG_DMA_HEADERS_BUFFER_SZ (sizeof(u32) * 128)
@@ -33,7 +37,7 @@
  * When disabling INIT property, we don't want to reset those bits since
  * they are needed for both LTM histogram and VLUT.
  */
-#define REG_DMA_LTM_INIT_ENABLE_OP_MASK 0x1100153
+#define REG_DMA_LTM_INIT_ENABLE_OP_MASK 0x1100053
 #define REG_DMA_LTM_INIT_DISABLE_OP_MASK 0xFFFF8CAF
 #define REG_DMA_LTM_ROI_OP_MASK 0xFEFFFFFF
 /**
@@ -4299,7 +4303,7 @@ void reg_dmav1_setup_ltm_roiv1(struct sde_hw_dspp *ctx, void *cfg)
 	struct drm_msm_ltm_cfg_param *cfg_param = NULL;
 	enum sde_ltm dspp_idx[LTM_MAX] = {0};
 	enum sde_ltm idx = 0;
-	u32 blk = 0, opmode = 0, i = 0, num_mixers = 0;
+	u32 blk = 0, i = 0, num_mixers = 0;
 	u32 roi_data[3];
 	int rc = 0;
 
@@ -4379,26 +4383,7 @@ void reg_dmav1_setup_ltm_roiv1(struct sde_hw_dspp *ctx, void *cfg)
 	}
 
 	for (i = 0; i < num_mixers; i++) {
-		/* broadcast feature is not supported with REG_SINGLE_MODIFY */
-		/* reset decode select to unicast */
-		dma_write_cfg.blk = ltm_mapping[dspp_idx[i]];
-		REG_DMA_SETUP_OPS(dma_write_cfg, 0, NULL, 0, HW_BLK_SELECT, 0,
-				0, 0);
-		rc = dma_ops->setup_payload(&dma_write_cfg);
-		if (rc) {
-			DRM_ERROR("write decode select failed ret %d\n", rc);
-			return;
-		}
-
 		ltm_vlut_ops_mask[dspp_idx[i]] |= ltm_roi;
-
-		REG_DMA_SETUP_OPS(dma_write_cfg, 0x04, &opmode, sizeof(opmode),
-			REG_SINGLE_MODIFY, 0, 0, REG_DMA_LTM_ROI_OP_MASK);
-		rc = dma_ops->setup_payload(&dma_write_cfg);
-		if (rc) {
-			DRM_ERROR("opmode write failed ret %d\n", rc);
-			return;
-		}
 	}
 
 	REG_DMA_SETUP_KICKOFF(kick_off, hw_cfg->ctl, ltm_buf[LTM_ROI][idx],
@@ -4876,9 +4861,22 @@ void reg_dmav2_setup_dspp_igcv4(struct sde_hw_dspp *ctx, void *cfg)
 		data[j++] = (u16)(lut_cfg->c0[i] << 4);
 		data[j++] = (u16)(lut_cfg->c1[i] << 4);
 	}
+#if defined(CONFIG_PXLW_IRIS) || defined(CONFIG_PXLW_SOFT_IRIS)
+	// WA: set last IGC values
+	if (iris_is_chip_supported() || iris_is_softiris_supported()) {
+		data[j++] = (u16)(lut_cfg->c2_last << 4);
+		data[j++] = (u16)(lut_cfg->c0_last << 4);
+		data[j++] = (u16)(lut_cfg->c1_last << 4);
+	} else {
+		data[j++] = (4095 << 4);
+		data[j++] = (4095 << 4);
+		data[j++] = (4095 << 4);
+	}
+#else
 	data[j++] = (4095 << 4);
 	data[j++] = (4095 << 4);
 	data[j++] = (4095 << 4);
+#endif
 	REG_DMA_SETUP_OPS(dma_write_cfg, 0, (u32 *)data, len,
 			REG_BLK_LUT_WRITE, 0, 0, 0);
 	/* table select is only relevant to SSPP Gamut */
